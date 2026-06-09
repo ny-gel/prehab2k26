@@ -1,4 +1,4 @@
-const CACHE = 'prehab-v2';
+const CACHE = 'prehab-v3';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
