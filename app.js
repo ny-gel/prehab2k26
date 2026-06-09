@@ -715,12 +715,53 @@ function nav(view, data = {}) {
 }
 
 /* ============================================================
+   NAV UI UPDATE
+   ============================================================ */
+
+function updateNavUI() {
+  const ctx  = document.getElementById('nav-ctx');
+  const fill = document.getElementById('prog-fill');
+  if (!ctx || !fill) return;
+  const today = Store.todayCompletions();
+  const doneCnt = EXERCISES.filter(e => today[e.id]).length;
+  switch (State.view) {
+    case 'exercise': {
+      const exIdx = EXERCISES.findIndex(e => e.id === State.exerciseDetail);
+      ctx.textContent  = (exIdx + 1) + ' of ' + EXERCISES.length;
+      fill.style.width = ((exIdx + 1) / EXERCISES.length * 100) + '%';
+      break;
+    }
+    case 'exercises':
+      ctx.textContent  = 'Exercises';
+      fill.style.width = (doneCnt / EXERCISES.length * 100) + '%';
+      break;
+    case 'calendar':
+      ctx.textContent  = 'Progress';
+      fill.style.width = '0%';
+      break;
+    case 'recordings':
+      ctx.textContent  = 'Voice';
+      fill.style.width = '0%';
+      break;
+    case 'notes':
+      ctx.textContent  = 'Notes';
+      fill.style.width = '0%';
+      break;
+    default:
+      ctx.textContent  = '';
+      fill.style.width = (doneCnt / EXERCISES.length * 100) + '%';
+  }
+}
+
+/* ============================================================
    RENDER ENGINE
    ============================================================ */
 
 function render() {
   const app = document.getElementById('app');
   const profile = Store.profile();
+
+  updateNavUI();
 
   if (!profile) { app.innerHTML = renderOnboarding(); bindOnboarding(); return; }
 
@@ -858,61 +899,51 @@ function renderHome(profile) {
   const streak   = Store.streakCount();
   const daysLeft = daysToSurgery(profile.surgeryDate);
 
-  const greetingHour = new Date().getHours();
-  const greeting = greetingHour < 12 ? 'Good morning' : greetingHour < 17 ? 'Good afternoon' : 'Good evening';
-
-  const dateStr = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const hr = new Date().getHours();
+  const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  const dateStr  = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return `<div class="screen">
     <div class="home-hero">
-      <div class="home-greeting">${greeting}, ${profile.name} 👋</div>
+      <div class="home-greeting">${greeting}, ${profile.name}</div>
       <div class="home-date">${dateStr}</div>
-      <div class="countdown-bar">
-        <div class="countdown-pill">
-          <div class="num">${Math.max(0, daysLeft)}</div>
-          <div class="lbl">days to surgery</div>
+      <div class="home-stats-row">
+        <div class="home-stat">
+          <span class="num">${Math.max(0, daysLeft)}</span>
+          <span class="lbl">Days to surgery</span>
         </div>
-        <div class="countdown-pill">
-          <div class="num">${streak}</div>
-          <div class="lbl">day streak</div>
+        <div class="home-stat">
+          <span class="num">${streak}</span>
+          <span class="lbl">Day streak</span>
         </div>
-        <div class="countdown-pill">
-          <div class="num">${Store.totalDays()}</div>
-          <div class="lbl">days done</div>
+        <div class="home-stat">
+          <span class="num">${Store.totalDays()}</span>
+          <span class="lbl">Days done</span>
         </div>
       </div>
       <div class="today-progress">
-        <div class="prog-bar-wrap">
-          <div class="prog-label">Today: ${done} of ${total} exercises ${Store.isTodayComplete() ? '✓' : ''}</div>
-          <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${pct}%"></div></div>
-        </div>
+        <div class="prog-label">Today: ${done} of ${total} exercises${Store.isTodayComplete() ? ' ✓' : ''}</div>
+        <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${pct}%"></div></div>
       </div>
     </div>
     <div class="content with-nav">
       ${Store.isTodayComplete()
-        ? `<div class="card" style="text-align:center;padding:22px 16px;">
-             <div style="font-size:48px;margin-bottom:8px;">🎉</div>
-             <div style="font-weight:700;font-size:1.1rem;color:var(--success);">All done for today!</div>
-             <div class="text-sm text-mute mt-8">Great work. Come back tomorrow to keep your streak going.</div>
+        ? `<div class="note-box" style="border-color:var(--green);background:var(--success-bg)">
+             <strong>All done for today!</strong> Great work. Come back tomorrow to keep your streak going.
            </div>`
         : `<div class="warn-box">
              <span>⚠️</span>
-             <span><strong>Work within your pain tolerance.</strong> Stop immediately if you experience pain. Maintain good posture throughout.</span>
+             <span><strong>Work within your pain tolerance.</strong> Stop if you experience pain. Maintain good posture throughout.</span>
            </div>`
       }
       <div class="section-label">Today's exercises</div>
       ${EXERCISES.slice(0, 4).map(e => exerciseListItem(e, today[e.id], skips[e.id])).join('')}
-      <button class="btn btn-primary mt-8" id="home-see-all">
-        ${NAV_ICONS.exercises} See all ${total} exercises
+      <button class="btn btn-navy mt-8" id="home-see-all">
+        ${NAV_ICONS.exercises}&nbsp; See all ${total} exercises
       </button>
-      <div class="card mt-16" style="background:#EBF5FB;">
-        <div style="font-weight:600;margin-bottom:6px;color:var(--accent);">General Instructions</div>
-        <div class="text-sm" style="color:var(--text);line-height:1.65;">
-          Do <strong>10 repetitions, 1–3 times per day, 5–7 days per week.</strong>
-          Maintain good posture. Keep shoulders, back, neck and head in the middle of your body.
-          These exercises can be done in front of a mirror.
-          <strong>Build up endurance slowly.</strong>
-        </div>
+      <div class="note-box mt-16">
+        <strong>Before you begin:</strong> Maintain good upright posture throughout. Keep your shoulders, back, neck and head centred.
+        <strong>Do not continue if you are experiencing pain.</strong> These exercises can be done in front of a mirror.
       </div>
     </div>
     ${navBar('home')}
@@ -932,22 +963,21 @@ function bindHome() {
 function exerciseListItem(ex, done, skipped) {
   const cls = done ? 'done' : skipped ? 'skipped' : '';
   const checkIcon = done
-    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+    ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
     : skipped
-    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+    ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`
     : '';
   return `<div class="ex-item ${cls}" data-ex-id="${ex.id}">
     <div class="ex-thumb">
       <img src="images/${ex.id}.jpg" alt="${ex.name}"
            style="width:100%;height:100%;object-fit:cover;border-radius:10px;"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-      <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center">${SVGS[ex.svgKey] || ''}</div>
+      <div style="display:none;width:52px;height:52px;align-items:center;justify-content:center;overflow:hidden">${SVGS[ex.svgKey] || ''}</div>
     </div>
     <div class="ex-info">
       <div class="ex-name">${ex.name}</div>
       ${ex.muscles ? `<div class="ex-muscle">${ex.muscles}</div>` : ''}
-      <div class="ex-reps">${ex.reps}${ex.hold ? ` · ${ex.hold}` : ''}</div>
-      ${skipped ? `<div style="font-size:.72rem;color:var(--warn-text);margin-top:2px;">Skipped today</div>` : ''}
+      <div class="ex-reps">${ex.reps}${ex.hold ? ` · ${ex.hold}` : ''}${skipped ? ' · <em>skipped</em>' : ''}</div>
     </div>
     <div class="check-ring ${done ? 'done' : skipped ? 'skipped' : ''}">${checkIcon}</div>
   </div>`;
@@ -969,6 +999,11 @@ function renderExerciseList(profile) {
         10 reps · 1–3× daily · 5–7 days/week · Work within your pain tolerance
       </div>
       ${EXERCISES.map(e => exerciseListItem(e, today[e.id], skips[e.id])).join('')}
+      ${done === EXERCISES.length
+        ? `<div class="note-box" style="border-color:var(--green);background:var(--success-bg);margin-top:10px;">
+             <strong>Session complete!</strong> All exercises addressed for today.
+           </div>`
+        : ''}
     </div>
     ${navBar('exercises')}
   </div>`;
@@ -991,21 +1026,23 @@ function renderExerciseDetail() {
   const exIdx   = EXERCISES.findIndex(e => e.id === ex.id);
   const nextEx  = EXERCISES[exIdx + 1] || null;
 
-  // Circular timer maths (r=44, circumference=276.46)
-  const CIRC    = 276.46;
-  const tLeft   = State.timerLeft;
-  const arcOffset = CIRC * (1 - tLeft / State.timerTarget);
-  const topLabel  = State.timerRunning
-    ? 'IN PROGRESS…'
+  const tLeft     = State.timerLeft;
+  const arcOffset = (TIMER_CIRC * (1 - tLeft / State.timerTarget)).toFixed(2);
+  const timerLbl  = State.timerRunning
+    ? 'In progress…'
     : tLeft === 0
-    ? 'COMPLETE!'
-    : `${State.timerTarget} SECONDS · TAP START WHEN READY`;
-  const hint = ex.hold
+    ? 'Done! Mark complete below.'
+    : `${State.timerTarget} seconds · tap Start when ready`;
+  const urgent    = tLeft <= 10 && State.timerRunning;
+  const hint      = ex.hold
     ? `Hold each position for ${ex.hold.toLowerCase()} before returning.`
     : 'Aim for smooth, controlled movements.';
 
-  const skipPanelHtml = `
-    <div class="skip-panel" id="skip-panel" style="display:${State.showSkipPanel ? 'block' : 'none'}">
+  const tags = [ex.reps, ex.hold].filter(Boolean)
+    .map(t => `<span class="ex-tag">${t}</span>`).join('');
+
+  const skipPanelHtml = State.showSkipPanel ? `
+    <div class="skip-panel">
       <div class="skip-panel-title">Why are you skipping?</div>
       <div class="skip-opts">
         <button class="skip-opt" data-reason="too-difficult">This is too difficult for me</button>
@@ -1016,85 +1053,83 @@ function renderExerciseDetail() {
         <input id="skip-other-text" class="skip-other-input" type="text" placeholder="Please explain briefly…" maxlength="200"/>
       </div>
       <button class="skip-confirm-btn" id="skip-confirm" disabled>Confirm skip</button>
-    </div>`;
+    </div>` : '';
+
+  const skipInfo = skipped
+    ? `<div class="warn-box" style="margin-bottom:8px;"><span>↷</span><span>Skipped — ${
+        skips[ex.id].reason === 'too-difficult' ? 'Too difficult'
+        : skips[ex.id].reason === 'dislike' ? 'Dislike' : 'Other'
+      }${skips[ex.id].text ? ': ' + escHtml(skips[ex.id].text) : ''}</span></div>` : '';
+
+  const completeBtn = skipped
+    ? `<button class="btn-complete skipped-state" id="ex-unskip-btn">Undo skip</button>`
+    : done
+    ? `<button class="btn-complete marked" id="ex-done-btn">✓ Complete</button>`
+    : `<button class="btn-complete" id="ex-done-btn">Mark Complete</button>`;
 
   return `<div class="screen">
-    <div class="page-header">
-      <button class="back-btn" id="ex-back">&#8249;</button>
-      <div>
-        <h2>${ex.name}</h2>
-        <p>${exIdx + 1} of ${EXERCISES.length}</p>
-      </div>
+    <div class="ex-nav-bar">
+      <div class="ex-num">Exercise ${exIdx + 1} of ${EXERCISES.length}</div>
+      <button class="btn-restart" id="ex-back">← Back to list</button>
     </div>
-    <div class="content" style="padding-bottom:160px;">
-      <div class="ex-detail-img">
-        <img src="images/${ex.id}.jpg" alt="${ex.name}"
-             style="width:100%;height:auto;display:block;"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
-        <div style="display:none">${SVGS[ex.svgKey] || ''}</div>
-      </div>
-      <div class="ex-title-block">
-        <h2>${ex.name}</h2>
-        ${ex.muscles ? `<span class="muscle-chip">for ${ex.muscles}</span>` : ''}
-      </div>
-      <div class="instruction-box"><p>${ex.instruction}</p></div>
-      <div class="reps-pill">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        ${ex.reps}${ex.hold ? ` · ${ex.hold}` : ''}
+    <div class="content" style="padding-bottom:200px;">
+
+      <div class="anim-card${done ? ' done-state' : ''}">
+        <div class="done-badge">✓</div>
+        ${ex.muscles ? `<div class="muscle-chip">${ex.muscles}</div>` : ''}
+        <img class="ex-img" src="images/${ex.id}.jpg" alt="${ex.name}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
+        <div class="ex-img-wrap" style="display:none">${SVGS[ex.svgKey] || ''}</div>
+        <div class="ex-title">${ex.name}</div>
+        <div class="ex-instr">${ex.instruction}</div>
+        ${tags ? `<div class="ex-tags">${tags}</div>` : ''}
       </div>
 
-      <div class="timer-card">
-        <div class="timer-top-label" id="timer-top-lbl">${topLabel}</div>
+      <div class="timer-panel">
+        <div class="timer-lbl" id="timer-top-lbl">${timerLbl}</div>
         <div class="timer-ring-wrap">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="44" fill="none" stroke="#E8EEF4" stroke-width="7"/>
-            <circle id="timer-arc" cx="50" cy="50" r="44" fill="none"
-              stroke="${tLeft === 0 ? 'var(--success)' : 'var(--success)'}"
-              stroke-width="7"
-              stroke-dasharray="${CIRC}"
-              stroke-dashoffset="${arcOffset}"
-              stroke-linecap="round"
-              transform="rotate(-90 50 50)"/>
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <circle class="timer-track" cx="60" cy="60" r="54"/>
+            <circle class="timer-arc${urgent ? ' urgent' : ''}" id="timer-arc"
+                    cx="60" cy="60" r="54"
+                    stroke-dasharray="${TIMER_CIRC}"
+                    stroke-dashoffset="${arcOffset}"/>
           </svg>
-          <div class="timer-ring-num${tLeft === 0 ? ' done' : ''}" id="timer-num">${tLeft}</div>
+          <div class="timer-num${tLeft === 0 ? ' done' : ''}${urgent ? ' urgent' : ''}" id="timer-num">${tLeft}</div>
         </div>
-        <div class="timer-btns">
-          <button class="timer-start-btn" id="timer-start">${State.timerRunning ? 'Pause' : tLeft === 0 ? 'Restart' : 'Start'}</button>
-          <button class="timer-reset-btn" id="timer-reset">Reset</button>
+        <div class="timer-controls">
+          <button class="btn-timer btn-timer-start" id="timer-start">
+            ${State.timerRunning ? 'Pause' : tLeft === 0 ? 'Restart' : 'Start'}
+          </button>
+          <button class="btn-timer btn-timer-reset" id="timer-reset">Reset</button>
         </div>
-        <div><span class="timer-hint">${hint}</span></div>
+        ${hint ? `<div class="hint">${hint}</div>` : ''}
       </div>
+
     </div>
 
-    <div style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--bg);border-top:1px solid var(--border);">
-      ${!done && !skipped ? skipPanelHtml : ''}
-      <div style="padding:10px 16px calc(var(--safe-bot) + 8px);display:flex;flex-direction:column;gap:8px;">
-        ${skipped
-          ? `<div class="warn-box" style="margin-bottom:4px;"><span>↷</span><span>Skipped — ${skips[ex.id].reason === 'too-difficult' ? 'Too difficult' : skips[ex.id].reason === 'dislike' ? 'Dislike' : 'Other'}${skips[ex.id].text ? ': ' + escHtml(skips[ex.id].text) : ''}</span></div>
-             <button class="btn btn-outline" id="ex-unskip-btn">Undo skip</button>`
-          : `<button class="btn ${done ? 'btn-outline' : 'btn-success'}" id="ex-done-btn">
-               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-               ${done ? 'Mark as not done' : 'Mark as done'}
-             </button>
-             ${!done ? `<button class="skip-toggle" id="skip-toggle">${State.showSkipPanel ? 'Cancel' : 'Skip this exercise'}</button>` : ''}`
-        }
-        ${nextEx
-          ? `<button class="btn-next" id="ex-next">
-               Next: ${nextEx.name}
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-             </button>`
-          : `<button class="btn-next" id="ex-next">
-               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-               Finish — back to list
-             </button>`
-        }
+    <div class="ex-actions-fixed">
+      ${skipInfo}
+      ${skipPanelHtml}
+      <div class="ex-action-row">
+        <button class="btn-nav" id="ex-prev" ${exIdx === 0 ? 'disabled' : ''}>←</button>
+        ${completeBtn}
+        <button class="btn-nav" id="ex-next" ${!nextEx ? 'disabled' : ''}>→</button>
       </div>
+      ${!done && !skipped
+        ? `<button class="skip-toggle" id="skip-toggle">${State.showSkipPanel ? 'Cancel' : 'Skip this exercise'}</button>`
+        : ''}
     </div>
   </div>`;
 }
 
 function bindExerciseDetail() {
   document.getElementById('ex-back').addEventListener('click', () => nav(State._fromView || 'exercises'));
+
+  document.getElementById('ex-prev')?.addEventListener('click', () => {
+    const idx = EXERCISES.findIndex(e => e.id === State.exerciseDetail);
+    if (idx > 0) nav('exercise', { id: EXERCISES[idx - 1].id });
+  });
 
   document.getElementById('ex-done-btn')?.addEventListener('click', () => {
     const ex   = EXERCISES.find(e => e.id === State.exerciseDetail);
@@ -1149,7 +1184,7 @@ function bindExerciseDetail() {
   });
 }
 
-const TIMER_CIRC = 276.46;
+const TIMER_CIRC = 339.3; // r=54: 2π×54
 
 function toggleTimer() {
   const btn = document.getElementById('timer-start');
@@ -1158,27 +1193,23 @@ function toggleTimer() {
     State.timerRunning = false;
     if (btn) btn.textContent = 'Resume';
     const lbl = document.getElementById('timer-top-lbl');
-    if (lbl) lbl.textContent = 'PAUSED';
+    if (lbl) lbl.textContent = 'Paused';
   } else {
     if (State.timerLeft <= 0) { resetExTimer(); return; }
     State.timerRunning = true;
     if (btn) btn.textContent = 'Pause';
     const lbl = document.getElementById('timer-top-lbl');
-    if (lbl) lbl.textContent = 'IN PROGRESS…';
+    if (lbl) lbl.textContent = 'In progress…';
     State.timerInterval = setInterval(() => {
       State.timerLeft = Math.max(0, State.timerLeft - 1);
       updateTimerDisplay();
       if (State.timerLeft === 0) {
         clearInterval(State.timerInterval); State.timerInterval = null;
         State.timerRunning = false;
-        const sb  = document.getElementById('timer-start');
+        const sb   = document.getElementById('timer-start');
         const lbl2 = document.getElementById('timer-top-lbl');
-        const doneBtn = document.getElementById('ex-done-btn');
-        if (sb)    sb.textContent = 'Restart';
-        if (lbl2)  lbl2.textContent = 'COMPLETE!';
-        if (doneBtn) doneBtn.classList.add('glow');
-        const numEl = document.getElementById('timer-num');
-        if (numEl) numEl.classList.add('done', 'pulse');
+        if (sb)   sb.textContent = 'Restart';
+        if (lbl2) lbl2.textContent = 'Done! Mark complete below.';
       }
     }, 1000);
   }
@@ -1188,37 +1219,49 @@ function resetExTimer() {
   if (State.timerInterval) { clearInterval(State.timerInterval); State.timerInterval = null; }
   State.timerRunning = false;
   State.timerLeft = State.timerTarget;
-  const sb   = document.getElementById('timer-start');
-  const numEl = document.getElementById('timer-num');
-  const lbl  = document.getElementById('timer-top-lbl');
-  if (sb)    sb.textContent = 'Start';
-  if (numEl) numEl.classList.remove('done', 'pulse');
-  if (lbl)   lbl.textContent = `${State.timerTarget} SECONDS · TAP START WHEN READY`;
+  const sb  = document.getElementById('timer-start');
+  const lbl = document.getElementById('timer-top-lbl');
+  if (sb)  sb.textContent = 'Start';
+  if (lbl) lbl.textContent = `${State.timerTarget} seconds · tap Start when ready`;
   updateTimerDisplay();
 }
 
 function updateTimerDisplay() {
   const numEl = document.getElementById('timer-num');
   const arcEl = document.getElementById('timer-arc');
-  if (numEl) numEl.textContent = State.timerLeft;
-  if (arcEl) {
-    const pct = State.timerLeft / State.timerTarget;
-    arcEl.setAttribute('stroke-dashoffset', TIMER_CIRC * (1 - pct));
-  }
+  if (!numEl || !arcEl) return;
+  const urgent = State.timerLeft <= 10 && State.timerRunning;
+  numEl.textContent = State.timerLeft;
+  numEl.className   = 'timer-num' + (State.timerLeft === 0 ? ' done' : '') + (urgent ? ' urgent' : '');
+  arcEl.className   = 'timer-arc' + (urgent ? ' urgent' : '');
+  const pct = State.timerLeft / State.timerTarget;
+  arcEl.setAttribute('stroke-dashoffset', (TIMER_CIRC * (1 - pct)).toFixed(2));
 }
 
 /* ─── Completion celebration ─────────────────────────────── */
 function renderCompletion(profile) {
   const streak = Store.streakCount();
+  const today  = Store.todayCompletions();
+  const skips  = Store.todaySkips();
+  const doneCnt  = EXERCISES.filter(e => today[e.id]).length;
+  const skipCnt  = EXERCISES.filter(e => skips[e.id]).length;
   return `<div class="screen">
     <div class="completion-wrap">
-      <div class="completion-emoji">🎉</div>
+      <div class="complete-icon">✓</div>
       <div class="completion-title">Well done, ${profile.name}!</div>
-      <div class="completion-sub">You've completed all your exercises for today. Every session brings you closer to a smoother recovery.</div>
-      ${streak > 1
-        ? `<div class="streak-badge">🔥 ${streak}-day streak!</div>`
-        : `<div class="streak-badge">✓ Day ${Store.totalDays()} complete</div>`}
-      <button class="btn btn-primary" id="comp-home" style="max-width:260px;">Back to home</button>
+      <div class="completion-sub">You've completed today's prehabilitation session. Aim to do these exercises 1–3 times per day, 5–7 days per week.</div>
+      <div class="c-stats">
+        <div class="c-stat">
+          <span class="c-stat-n">${doneCnt}</span>
+          <span class="c-stat-l">Completed</span>
+        </div>
+        ${skipCnt ? `<div class="c-stat"><span class="c-stat-n">${skipCnt}</span><span class="c-stat-l">Skipped</span></div>` : ''}
+        <div class="c-stat">
+          <span class="c-stat-n">${streak}</span>
+          <span class="c-stat-l">Day streak</span>
+        </div>
+      </div>
+      <button class="btn btn-navy" id="comp-home" style="max-width:280px;margin:0 auto;">Back to home</button>
     </div>
     ${navBar('home')}
   </div>`;
@@ -1277,12 +1320,12 @@ function renderCalendar() {
   return `<div class="screen">
     <div class="page-header"><h2>Progress</h2></div>
     <div class="content with-nav">
-      <div class="stats-row">
-        <div class="stat-chip"><div class="n">${total}</div><div class="l">Days complete</div></div>
-        <div class="stat-chip"><div class="n">${streak}</div><div class="l">Current streak</div></div>
-        <div class="stat-chip"><div class="n">${EXERCISES.length}</div><div class="l">Exercises/day</div></div>
+      <div class="cal-stats-row">
+        <div class="cal-stat-box"><div class="n">${total}</div><div class="l">Days complete</div></div>
+        <div class="cal-stat-box"><div class="n">${streak}</div><div class="l">Day streak</div></div>
+        <div class="cal-stat-box"><div class="n">${EXERCISES.length}</div><div class="l">Exercises/day</div></div>
       </div>
-      <div class="card">
+      <div class="cal-card">
         <div class="cal-header">
           <button class="cal-nav-btn" id="cal-prev">&#8249;</button>
           <span class="cal-month">${monthLabel}</span>
@@ -1293,9 +1336,9 @@ function renderCalendar() {
           ${cells}
         </div>
         <div class="cal-legend">
-          <div class="cal-legend-item"><div class="cal-swatch" style="background:var(--success)"></div>All done</div>
-          <div class="cal-legend-item"><div class="cal-swatch" style="background:#FDECEA;border:1px solid #C0392B"></div>Partial</div>
-          <div class="cal-legend-item"><div class="cal-swatch" style="background:#EBF5FB;border:1px solid var(--accent)"></div>Today</div>
+          <div class="cal-legend-item"><div class="cal-swatch" style="background:var(--green)"></div>All done</div>
+          <div class="cal-legend-item"><div class="cal-swatch" style="background:#fdecea;border:1px solid #C0392B"></div>Partial</div>
+          <div class="cal-legend-item"><div class="cal-swatch" style="background:#e8f4fc;border:2px solid var(--navy)"></div>Today</div>
         </div>
       </div>
     </div>
@@ -1330,7 +1373,7 @@ function renderRecordings() {
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2"/><line x1="8" y1="23" x2="16" y2="23" stroke="currentColor" stroke-width="2"/></svg>
         </button>
         <div class="rec-timer" id="rec-timer"></div>
-        <div class="text-sm text-mute" id="rec-hint">Tap to start recording</div>
+        <div class="text-sm text-mute rec-hint" id="rec-hint">Tap to start recording</div>
       </div>
       <div class="section-label mt-8">Saved recordings</div>
       <div id="rec-list"><div class="text-sm text-mute">Loading…</div></div>
@@ -1576,5 +1619,3 @@ function escHtml(s) {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
-
-render();
