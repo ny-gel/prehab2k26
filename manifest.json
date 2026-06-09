@@ -1,11 +1,11 @@
 {
-  "name": "PreHab — Neck Surgery Preparation",
+  "name": "PreHab — Dr. Ted Michelakos",
   "short_name": "PreHab",
-  "description": "Daily prehabilitation exercises before neck surgery",
+  "description": "Guided prehabilitation exercises before neck surgery",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F4F6F9",
-  "theme_color": "#1B4F72",
+  "background_color": "#f5f5f3",
+  "theme_color": "#1a2744",
   "orientation": "portrait",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
